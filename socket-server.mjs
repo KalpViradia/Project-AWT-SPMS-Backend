@@ -5,27 +5,48 @@ const port = parseInt(process.env.PORT || "4000", 10);
 const CORS_ORIGIN = process.env.FRONTEND_URL || "http://localhost:3000";
 const EMIT_SECRET = process.env.SOCKET_EMIT_SECRET || "dev-secret";
 
+function setCorsHeaders(res) {
+    res.setHeader("Access-Control-Allow-Origin", CORS_ORIGIN);
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
 const httpServer = createServer((req, res) => {
+
+    // Handle preflight (VERY IMPORTANT)
+    if (req.method === "OPTIONS") {
+        setCorsHeaders(res);
+        res.writeHead(204);
+        res.end();
+        return;
+    }
+
     // Health check
     if (req.method === "GET" && req.url === "/health") {
+        setCorsHeaders(res);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ status: "ok" }));
         return;
     }
 
-    // HTTP relay endpoint — Vercel server actions POST here to emit events
+    // HTTP relay endpoint
     if (req.method === "POST" && req.url === "/emit") {
+        setCorsHeaders(res);
+
         let body = "";
         req.on("data", (chunk) => (body += chunk));
         req.on("end", () => {
             try {
                 const { secret, room, event, data } = JSON.parse(body);
+
                 if (secret !== EMIT_SECRET) {
                     res.writeHead(401, { "Content-Type": "application/json" });
                     res.end(JSON.stringify({ error: "Unauthorized" }));
                     return;
                 }
+
                 io.to(room).emit(event, data);
+
                 res.writeHead(200, { "Content-Type": "application/json" });
                 res.end(JSON.stringify({ ok: true }));
             } catch (err) {
