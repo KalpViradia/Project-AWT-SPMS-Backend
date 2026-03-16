@@ -70,20 +70,17 @@ const io = new Server(httpServer, {
 });
 
 io.on("connection", (socket) => {
-    console.log(`[Socket.IO] Client connected: ${socket.id}`);
 
     // Join user notification room: "user:student:5" or "user:faculty:3"
     socket.on("join:user", ({ userId, userRole }) => {
         const room = `user:${userRole}:${userId}`;
         socket.join(room);
-        console.log(`[Socket.IO] ${socket.id} joined room ${room}`);
     });
 
     // Join group discussion room: "group:12"
     socket.on("join:group", ({ groupId }) => {
         const room = `group:${groupId}`;
         socket.join(room);
-        console.log(`[Socket.IO] ${socket.id} joined room ${room}`);
     });
 
     // Leave group room
@@ -99,7 +96,6 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", () => {
-        console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
     });
 });
 
